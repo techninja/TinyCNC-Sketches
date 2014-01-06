@@ -1,4 +1,4 @@
-/* 
+/*
 Tiny 3-Axis CNC Sketch to draw shapes using the MakerBot Unicorn Inkscape plugin available here https://github.com/martymcguire/inkscape-unicorn
 */
 
@@ -10,10 +10,10 @@ Tiny 3-Axis CNC Sketch to draw shapes using the MakerBot Unicorn Inkscape plugin
 #define LINE_BUFFER_LENGTH 512
 
 /* Structures, global variables    */
-struct point { 
-  float x; 
-  float y; 
-  float z; 
+struct point {
+  float x;
+  float y;
+  float z;
 };
 
 /* Naming servos    */
@@ -40,7 +40,7 @@ float Xdmin = 17;  //  8.31mm
 float Xdmax = 171;  //  83.57mm
 float Ydmin = 25;  //  Functionally 18 degrees  //  12.22mm
 float Ydmax = 146;  //  Functionally 146        //  71.35mm
-float Zdmin = 18;  
+float Zdmin = 18;
 float Zdmax = 50;
 
 //  Drawing robot limits, in mm
@@ -53,11 +53,11 @@ float Zmax = Zdmax;
 
 float Xpos = Xdmin;
 float Ypos = Ydmin;
-float Zpos = Zmax; 
+float Zpos = Zmax;
 
 boolean verbose = false;
 
-//  Needs to interpret 
+//  Needs to interpret
 //  G1 for moving
 //  G4 P300 (wait 150ms)
 //  M300 S30 (pen down)
@@ -81,25 +81,25 @@ void setup() {
   servoZ.write(Zpos);
   //  Notifications!!!
   Serial.println("Robot Team Go!!!");
-  Serial.print("Step increment is "); 
-  Serial.print(StepInc); 
+  Serial.print("Step increment is ");
+  Serial.print(StepInc);
   Serial.println(" degrees");
-  Serial.print("X range is from "); 
-  Serial.print(Xmin); 
-  Serial.print(" to "); 
-  Serial.print(Xmax); 
-  Serial.println(" mm."); 
-  Serial.print("Y range is from "); 
-  Serial.print(Ymin); 
-  Serial.print(" to "); 
-  Serial.print(Ymax); 
-  Serial.println(" mm."); 
+  Serial.print("X range is from ");
+  Serial.print(Xmin);
+  Serial.print(" to ");
+  Serial.print(Xmax);
+  Serial.println(" mm.");
+  Serial.print("Y range is from ");
+  Serial.print(Ymin);
+  Serial.print(" to ");
+  Serial.print(Ymax);
+  Serial.println(" mm.");
 }
 
 /**********************
  * void loop() - Main loop
  ***********************/
-void loop() 
+void loop()
 {
   delay(1000);
   char line[ LINE_BUFFER_LENGTH ];
@@ -119,42 +119,42 @@ void loop()
       if (( c == '\n') || (c == '\r') ) {             // End of line reached
         if ( lineIndex > 0 ) {                        // Line is complete. Then execute!
           line[ lineIndex ] = '\0';                   // Terminate string
-          if (verbose) { 
-            Serial.print( "Received : "); 
-            Serial.println( line ); 
+          if (verbose) {
+            Serial.print( "Received : ");
+            Serial.println( line );
           }
           processIncomingLine( line, lineIndex );
           lineIndex = 0;
-        } 
-        else { 
+        }
+        else {
           // Empty or comment line. Skip block.
         }
         lineIsComment = false;
-        lineSemiColon = false;  
-      } 
+        lineSemiColon = false;
+      }
       else {
         if ( (lineIsComment) || (lineSemiColon) ) {   // Throw away all comment characters
           if ( c == ')' )  lineIsComment = false;     // End of comment. Resume line.
-        } 
+        }
         else {
           if ( c <= ' ' ) {                           // Throw away whitepace and control characters
-          } 
+          }
           else if ( c == '/' ) {                    // Block delete not supported. Ignore character.
-          } 
+          }
           else if ( c == '(' ) {                    // Enable comments flag and ignore all characters until ')' or EOL.
             lineIsComment = true;
-          } 
+          }
           else if ( c == ';' ) {
             lineSemiColon = true;
-          } 
+          }
           else if ( lineIndex >= LINE_BUFFER_LENGTH-1 ) {
             Serial.println( "ERROR - lineBuffer overflow" );
             lineIsComment = false;
             lineSemiColon = false;
-          } 
+          }
           else if ( c >= 'a' && c <= 'z' ) {        // Upcase lowercase
             line[ lineIndex++ ] = c-'a'+'A';
-          } 
+          }
           else {
             line[ lineIndex++ ] = c;
           }
@@ -172,7 +172,7 @@ void processIncomingLine( char* line, int charNB ) {
   newPos.x = 0.0;
   newPos.y = 0.0;
 
-  //  Needs to interpret 
+  //  Needs to interpret
   //  G1 for moving
   //  G4 P300 (wait 150ms)
   //  G1 X60 Y30
@@ -185,10 +185,10 @@ void processIncomingLine( char* line, int charNB ) {
   while( currentIndex < charNB ) {
     switch ( line[ currentIndex++ ] ) {              // Select command, if any
     case 'U':
-      penUp(); 
+      penUp();
       break;
     case 'D':
-      penDown(); 
+      penDown();
       break;
     case 'G':
       buffer[0] = line[ currentIndex++ ];          // /!\ Dirty - Only works with 2 digit commands
@@ -203,13 +203,13 @@ void processIncomingLine( char* line, int charNB ) {
         char* indexX = strchr( line+currentIndex, 'X' );  // Get X/Y position in the string (if any)
         char* indexY = strchr( line+currentIndex, 'Y' );
         if ( indexY <= 0 ) {
-          newPos.x = atof( indexX + 1); 
+          newPos.x = atof( indexX + 1);
           newPos.y = actuatorPos.y;
-        } 
+        }
         else if ( indexX <= 0 ) {
           newPos.y = atof( indexY + 1);
           newPos.x = actuatorPos.x;
-        } 
+        }
         else {
           newPos.y = atof( indexY + 1);
           indexY = '\0';
@@ -255,9 +255,9 @@ void processIncomingLine( char* line, int charNB ) {
 void drawCircleSpiral(float x0, float y0, float rad, float dec)
 {
   int i = 0;
-  while (rad-dec*i > StepInc) { 
-    drawCircle(x0, y0, rad-dec*i); 
-    i++; 
+  while (rad-dec*i > StepInc) {
+    drawCircle(x0, y0, rad-dec*i);
+    i++;
   }
 }
 
@@ -265,13 +265,13 @@ void drawCircleSpiral(float x0, float y0, float rad, float dec)
 void drawCircle(float x0, float y0, float rad)
 {
   //  Lift the pen, go to leftmost point on circle, set the pen down
-  penUp(); 
-  drawLine(x0-rad, y0); 
+  penUp();
+  drawLine(x0-rad, y0);
   penDown();
   float x1, y1, dist;
   //  This will draw the top half of the circle!
   for (int i=0; i*StepInc < rad*2; i++ )
-  { 
+  {
     x1 = x0+StepInc*i-rad;
     y1 = y0 + returnY(x0+StepInc*i-rad, x0, rad);
     dist = lineDist(deg2mm(Xpos), deg2mm(Ypos), x1, y1);
@@ -282,11 +282,11 @@ void drawCircle(float x0, float y0, float rad)
       y1 = y0 + returnY(x0+StepInc*i-rad, x0, rad);
       dist = lineDist(deg2mm(Xpos), deg2mm(Ypos), x1, y1);
     }
-    drawLine(x1, y1); 
+    drawLine(x1, y1);
   }
   //  This should draw the bottom half of the circle!
   for (int i=0; i*StepInc < rad*2; i++ )
-  { 
+  {
     x1 = x0+rad - StepInc*i;
     y1 = y0 -returnY(x0-StepInc*i+rad, x0, rad);
     dist = lineDist(deg2mm(Xpos), deg2mm(Ypos), x1, y1);
@@ -297,10 +297,10 @@ void drawCircle(float x0, float y0, float rad)
       y1 = y0 - returnY(x0-StepInc*i+rad, x0, rad);
       dist = lineDist(deg2mm(Xpos), deg2mm(Ypos), x1, y1);
     }
-    drawLine(x1, y1); 
+    drawLine(x1, y1);
   }
   //  Complete the circle, pen up!
-  drawLine(x0-rad, y0); 
+  drawLine(x0-rad, y0);
 }
 
 //  Draw a rectangular spiral using just two points
@@ -308,8 +308,8 @@ void drawRectSpiral(float x0, float y0, float x1, float y1, float dec, boolean t
 {
   drawLine(x0,y0);
   for (int i=0; ((x1-x0)/2 > dec*i) && ((y1-y0)/2 > dec*i);i++)
-  { 
-    drawRect(x0+dec*i,y0+dec*i,x1-dec*i,y1-dec*i, toggle); 
+  {
+    drawRect(x0+dec*i,y0+dec*i,x1-dec*i,y1-dec*i, toggle);
   }
 }
 
@@ -318,37 +318,37 @@ void drawRect(float x0, float y0, float x1, float y1, boolean toggle)
 {
   penUp();
   drawLine(x0,y0);
-  if (toggle) { 
-    penUp(); 
-    delay(penDelay); 
-    penDown(); 
+  if (toggle) {
+    penUp();
+    delay(penDelay);
+    penDown();
   }
-  else { 
-    penDown(); 
+  else {
+    penDown();
   }
   drawLine(x1,y0);
-  if (toggle) { 
-    penUp(); 
-    delay(penDelay); 
-    penDown(); 
+  if (toggle) {
+    penUp();
+    delay(penDelay);
+    penDown();
   }
   drawLine(x1,y1);
-  if (toggle) { 
-    penUp(); 
-    delay(penDelay); 
-    penDown(); 
+  if (toggle) {
+    penUp();
+    delay(penDelay);
+    penDown();
   }
   drawLine(x0,y1);
-  if (toggle) { 
-    penUp(); 
-    delay(penDelay); 
-    penDown(); 
+  if (toggle) {
+    penUp();
+    delay(penDelay);
+    penDown();
   }
   drawLine(x0,y0);
-  if (toggle) { 
-    penUp(); 
-    delay(penDelay); 
-    penDown(); 
+  if (toggle) {
+    penUp();
+    delay(penDelay);
+    penDown();
   }
 }
 
@@ -367,17 +367,17 @@ void drawLine(float x1, float y1) {
   float y0 = Ypos;
 
   //  Bring instructions within limits
-  if (x1 >= Xdmax) { 
-    x1 = Xdmax; 
+  if (x1 >= Xdmax) {
+    x1 = Xdmax;
   }
-  if (x1 <= Xdmin) { 
-    x1 = Xdmin; 
+  if (x1 <= Xdmin) {
+    x1 = Xdmin;
   }
-  if (y1 >= Ydmax) { 
-    y1 = Ydmax; 
+  if (y1 >= Ydmax) {
+    y1 = Ydmax;
   }
-  if (y1 <= Ydmin) { 
-    y1 = Ydmin; 
+  if (y1 <= Ydmin) {
+    y1 = Ydmin;
   }
 
   //  Let's find out the change for the coordinates
@@ -386,7 +386,7 @@ void drawLine(float x1, float y1) {
   float err = (dx>dy ? dx : -dy)/2, e2;
 
   //  Loops servo instructions until destination reached
-  for(;;){    
+  for(;;){
     delay(1);  //  Without this the program sometimes hangs!
     servoX.write( x0 );
     servoY.write( y0 );
@@ -418,45 +418,45 @@ void drawLine(float x1, float y1) {
   Ypos = y1;
 }
 //  Raises pen
-void penUp() { 
-  servoZ.write(Zdmax); 
-  delay(LineDelay); 
-  Zpos=Zdmax; 
-  if (verbose) { 
-    Serial.println("Pen up!"); 
-  } 
+void penUp() {
+  servoZ.write(Zdmax);
+  delay(LineDelay);
+  Zpos=Zdmax;
+  if (verbose) {
+    Serial.println("Pen up!");
+  }
 }
 //  Lowers pen
-void penDown() { 
-  servoZ.write(Zdmin); 
-  delay(LineDelay); 
-  Zpos=Zdmin; 
-  if (verbose) { 
-    Serial.println("Pen down."); 
-  } 
+void penDown() {
+  servoZ.write(Zdmin);
+  delay(LineDelay);
+  Zpos=Zdmin;
+  if (verbose) {
+    Serial.println("Pen down.");
+  }
 }
 
 //////////////////////////////////////////
 //  Functions for Calculating Useful Stuff
 //////////////////////////////////////////
 //  Converts mm to degrees for the servos
-float mm2deg(float mm) { 
-  return mm/PI/gearD*360; 
+float mm2deg(float mm) {
+  return mm/PI/gearD*360;
 }
 //  Converts mm to degrees for the servos
-float deg2mm(float deg) { 
-  return PI*gearD*deg/360; 
+float deg2mm(float deg) {
+  return PI*gearD*deg/360;
 }
 //  Function for getting Y to draw a circle
 float returnY(float x, float x0, float rad)
-{ 
-  return ((int) ((pow( pow(rad, 2) - pow((x-x0), 2) , 0.5))*pow(10,PowerRound)))/pow(10,PowerRound); 
+{
+  return ((int) ((pow( pow(rad, 2) - pow((x-x0), 2) , 0.5))*pow(10,PowerRound)))/pow(10,PowerRound);
 }
 //  Function for determining distance between two points
-float lineDist(float x0, float y0, float x1, float y1) 
-{ 
-  //  return ((int) (pow(pow(x1-x0, 2) + pow(y1-y0, 2), 0.5) * pow(10,PowerRound)))/pow(10,PowerRound); 
-  float temp = pow(pow(x1-x0, 2) + pow(y1-y0, 2), 0.5); 
+float lineDist(float x0, float y0, float x1, float y1)
+{
+  //  return ((int) (pow(pow(x1-x0, 2) + pow(y1-y0, 2), 0.5) * pow(10,PowerRound)))/pow(10,PowerRound);
+  float temp = pow(pow(x1-x0, 2) + pow(y1-y0, 2), 0.5);
   //    Serial.println(temp);
   temp = (int) temp * pow(10,PowerRound);
   //    Serial.println(temp);
